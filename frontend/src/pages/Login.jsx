@@ -35,7 +35,30 @@ function Login() {
                 JSON.stringify(data.user)
             );
 
-            navigate("/dashboard");
+            // DECIDE PARA ONDE O USUÁRIO VAI
+if (data.user.role === "admin") {
+
+    navigate("/admin");
+
+} else if (
+    data.user.role === "technician"
+) {
+
+    navigate("/tecnico");
+
+} else {
+
+    navigate("/dashboard");
+
+}
+
+    if (data.user.role === "admin") {
+    navigate("/admin");
+} else if (data.user.role === "technician") {
+    navigate("/tecnico");
+} else {
+    navigate("/dashboard");
+}
 
         } catch (error) {
             setError(error.message);

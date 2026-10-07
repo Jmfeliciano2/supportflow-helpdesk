@@ -41,6 +41,92 @@ db.exec(`
     );
 `);
 
+db.exec(`
+    CREATE TABLE IF NOT EXISTS ticket_comments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ticket_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        message TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+        FOREIGN KEY (ticket_id)
+            REFERENCES tickets(id)
+            ON DELETE CASCADE,
+
+        FOREIGN KEY (user_id)
+            REFERENCES users(id)
+            ON DELETE CASCADE
+    )
+`);
+
+db.exec(`
+    CREATE TABLE IF NOT EXISTS ticket_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ticket_id INTEGER NOT NULL,
+        user_id INTEGER,
+        action TEXT NOT NULL,
+        old_value TEXT,
+        new_value TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+        FOREIGN KEY (ticket_id)
+            REFERENCES tickets(id)
+            ON DELETE CASCADE,
+
+        FOREIGN KEY (user_id)
+            REFERENCES users(id)
+            ON DELETE SET NULL
+    )
+`);
+
+// ========================================
+// MIGRAÇÃO - SLA DOS CHAMADOS
+// ========================================
+
+const ticketColumns = db
+    .prepare("PRAGMA table_info(tickets)")
+    .all();
+
+const hasDueAt = ticketColumns.some(
+    (column) => column.name === "due_at"
+);
+
+if (!hasDueAt) {
+    db.prepare(`
+        ALTER TABLE tickets
+        ADD COLUMN due_at DATETIME
+    `).run();
+
+    console.log(
+        "Coluna due_at adicionada à tabela tickets."
+    );
+}
+
+// ========================================
+// MIGRAÇÃO - resolved_at
+// ========================================
+
+const updatedTicketColumns =
+    db.prepare(
+        "PRAGMA table_info(tickets)"
+    ).all();
+
+const hasResolvedAt =
+    updatedTicketColumns.some(
+        (column) =>
+            column.name === "resolved_at"
+    );
+
+if (!hasResolvedAt) {
+    db.prepare(`
+        ALTER TABLE tickets
+        ADD COLUMN resolved_at DATETIME
+    `).run();
+
+    console.log(
+        "Coluna resolved_at adicionada à tabela tickets."
+    );
+}
 console.log("Banco de dados conectado com sucesso.");
 
 module.exports = db;
