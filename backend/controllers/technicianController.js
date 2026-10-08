@@ -5,7 +5,9 @@ const db = require("../database/database");
 // ========================================
 
 function listAllTickets(req, res) {
+
     try {
+
         const tickets = db.prepare(`
             SELECT
                 tickets.id,
@@ -24,29 +26,43 @@ function listAllTickets(req, res) {
                 creator.name AS created_by_name,
                 creator.email AS created_by_email,
 
-                technician.name AS assigned_to_name
+                technician.name AS assigned_to_name,
+                technician.email AS assigned_to_email
 
             FROM tickets
 
-            INNER JOIN users AS creator
+            LEFT JOIN users AS creator
                 ON creator.id = tickets.created_by
 
             LEFT JOIN users AS technician
                 ON technician.id = tickets.assigned_to
 
-            ORDER BY tickets.created_at DESC
+            ORDER BY
+                tickets.created_at DESC,
+                tickets.id DESC
         `).all();
 
-        return res.status(200).json(tickets);
+
+        console.log(
+            `[TECHNICIAN] ${tickets.length} chamados encontrados.`
+        );
+
+
+        return res.status(200).json({
+            tickets,
+        });
 
     } catch (error) {
+
         console.error(
             "Erro ao listar chamados:",
             error
         );
 
+
         return res.status(500).json({
-            error: "Erro ao buscar chamados.",
+            error:
+                "Erro ao buscar chamados.",
         });
     }
 }

@@ -1,6 +1,199 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import request from "../services/api";
+
+const AI_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || "";
+
+const validCategories = [
+    "Hardware",
+    "Software",
+    "Rede",
+    "Acesso",
+    "Email",
+    "Outros",
+];
+
+const validPriorities = ["low", "medium", "high", "critical"];
+
+function normalizeCategory(value) {
+    if (!value) return "";
+
+    const normalized = value
+        .toString()
+        .trim()
+        .toLowerCase();
+
+    if (["hardware", "equipamento", "notebook", "pc", "monitor", "impressora", "teclado", "mouse"].includes(normalized)) {
+        return "Hardware";
+    }
+
+    if (["software", "sistema", "aplicativo", "erro", "bug", "programa", "windows", "excel", "site", "app"].includes(normalized)) {
+        return "Software";
+    }
+
+    if (["rede", "internet", "wifi", "wi-fi", "vpn", "lan", "conexao", "conexão", "router", "dns"].includes(normalized)) {
+        return "Rede";
+    }
+
+    if (["senha", "acesso", "login", "desbloquear", "recuperar", "permissao", "permissão", "cadastro", "conta"].includes(normalized)) {
+        return "Acesso";
+    }
+
+    if (["email", "e-mail", "gmail", "outlook", "hotmail", "exchange", "mensagem de email"].includes(normalized)) {
+        return "Email";
+    }
+
+    return "Outros";
+}
+
+function normalizePriority(value) {
+    if (!value) return "medium";
+
+    const normalized = value.toString().trim().toLowerCase();
+
+    if (["critica", "crítica", "critical", "urgente", "bloqueante"].includes(normalized)) {
+        return "critical";
+    }
+
+    if (["alta", "high", "severo", "impacto alto"].includes(normalized)) {
+        return "high";
+    }
+
+    if (["baixa", "low", "pouco impacto"].includes(normalized)) {
+        return "low";
+    }
+
+    return "medium";
+}
+
+function extractJsonFromText(text) {
+    if (!text) return null;
+
+    const cleanedText = text.trim();
+
+    try {
+        const jsonStart = cleanedText.indexOf("{");
+        const jsonEnd = cleanedText.lastIndexOf("}");
+
+        if (jsonStart >= 0 && jsonEnd > jsonStart) {
+            const candidate = cleanedText.slice(jsonStart, jsonEnd + 1);
+            return JSON.parse(candidate);
+        }
+    } catch (error) {
+        // Ignora parse falho e usa fallback local
+    }
+
+    const categoryMatch = cleanedText.match(/categoria\s*[:=]\s*([A-Za-zÀ-ÿ\s]+)/i);
+    const priorityMatch = cleanedText.match(/prioridade\s*[:=]\s*([A-Za-zÀ-ÿ\s]+)/i);
+
+    if (categoryMatch || priorityMatch) {
+        return {
+            category: categoryMatch ? normalizeCategory(categoryMatch[1]) : "",
+            priority: priorityMatch ? normalizePriority(priorityMatch[1]) : "",
+        };
+    }
+
+    return null;
+}
+
+function buildFallbackClassification(title, description) {
+    const text = `${title} ${description}`.toLowerCase();
+
+    const lowerText = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    let category = "Outros";
+
+    if (/(notebook|pc|monitor|impressora|teclado|mouse|hardware|cpu|gpu|ssd|hd|fonte|cabos|periferico|periférico|ram)/i.test(lowerText)) {
+        category = "Hardware";
+    } else if (/(software|bug|erro|aplicativo|sistema|programa|windows|excel|word|sistema|app|falha)/i.test(lowerText)) {
+        category = "Software";
+    } else if (/(wifi|wi-fi|internet|rede|vpn|dns|router|switch|conexao|conexão|ping|latencia|latência)/i.test(lowerText)) {
+        category = "Rede";
+    } else if (/(senha|acesso|login|desbloquear|reset|recuperar|permissao|permissão|conta|cadastro)/i.test(lowerText)) {
+        category = "Acesso";
+    } else if (/(email|e-mail|gmail|outlook|hotmail|exchange|caixa de entrada|mensagem)/i.test(lowerText)) {
+        category = "Email";
+    }
+
+    let priority = "medium";
+
+    if (/(bloqueado|inacessivel|inacessível|crítico|critico|sem acesso|nao funciona|não funciona|quebrou|fora do ar|seguranca|segurança|vulnerabilidade)/i.test(lowerText)) {
+        priority = "critical";
+    } else if (/(muito importante|alto impacto|urgente|grave|lentidao|lentidão|nao abre|não abre|parou)/i.test(lowerText)) {
+        priority = "high";
+    } else if (/(teste|ajuda|dúvida|duvida|questionamento|configuracao|configuração)/i.test(lowerText)) {
+        priority = "low";
+    }
+
+    return {
+        category,
+        priority,
+    };
+}
+
+async function classifyTicketWithAI(title, description) {
+    const inputText = `${title || ""}\n${description || ""}`.trim();
+
+    if (inputText.length < 12) {
+        return null;
+    }
+
+    const fallback = buildFallbackClassification(title, description);
+
+    if (!AI_API_KEY) {
+        return fallback;
+    }
+
+    try {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${AI_API_KEY}`,
+            },
+            body: JSON.stringify({
+                model: "openai/gpt-4o-mini",
+                temperature: 0,
+                messages: [
+                    {
+                        role: "system",
+                        content:
+                            "Analise o pedido de suporte e responda somente em JSON com duas chaves: category e priority. Use apenas valores aceitos: category = Hardware, Software, Rede, Acesso, Email, Outros; priority = low, medium, high, critical. Não escreva texto extra.",
+                    },
+                    {
+                        role: "user",
+                        content: `Título: ${title}\nDescrição: ${description}`,
+                    },
+                ],
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`AI unavailable: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const content = data?.choices?.[0]?.message?.content || "";
+        const parsed = extractJsonFromText(content);
+
+        if (!parsed) {
+            return fallback;
+        }
+
+        const category = validCategories.includes(parsed.category)
+            ? parsed.category
+            : normalizeCategory(parsed.category || fallback.category);
+
+        const priority = validPriorities.includes(parsed.priority)
+            ? parsed.priority
+            : normalizePriority(parsed.priority || fallback.priority);
+
+        return { category, priority };
+    } catch (error) {
+        console.warn("IA indisponível, usando classificação local:", error);
+        return fallback;
+    }
+}
 
 function NewTicket() {
     const navigate = useNavigate();
@@ -14,6 +207,28 @@ function NewTicket() {
 
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const text = `${form.title} ${form.description}`.trim();
+
+        if (text.length < 12) {
+            return undefined;
+        }
+
+        const timer = setTimeout(async () => {
+            const suggestion = await classifyTicketWithAI(form.title, form.description);
+
+            if (suggestion) {
+                setForm((previous) => ({
+                    ...previous,
+                    category: suggestion.category,
+                    priority: suggestion.priority,
+                }));
+            }
+        }, 600);
+
+        return () => clearTimeout(timer);
+    }, [form.title, form.description]);
 
     function handleChange(event) {
         const { name, value } = event.target;
@@ -118,79 +333,6 @@ function NewTicket() {
                         />
                     </div>
 
-                    <div className="form-row">
-
-                        <div className="form-group">
-                            <label htmlFor="category">
-                                Categoria *
-                            </label>
-
-                            <select
-                                id="category"
-                                name="category"
-                                value={form.category}
-                                onChange={handleChange}
-                            >
-                                <option value="">
-                                    Selecione uma categoria
-                                </option>
-
-                                <option value="Hardware">
-                                    Hardware
-                                </option>
-
-                                <option value="Software">
-                                    Software
-                                </option>
-
-                                <option value="Rede">
-                                    Rede / Internet
-                                </option>
-
-                                <option value="Acesso">
-                                    Acesso / Senha
-                                </option>
-
-                                <option value="Email">
-                                    E-mail
-                                </option>
-
-                                <option value="Outros">
-                                    Outros
-                                </option>
-                            </select>
-                        </div>
-
-                        <div className="form-group">
-                            <label htmlFor="priority">
-                                Prioridade
-                            </label>
-
-                            <select
-                                id="priority"
-                                name="priority"
-                                value={form.priority}
-                                onChange={handleChange}
-                            >
-                                <option value="low">
-                                    Baixa
-                                </option>
-
-                                <option value="medium">
-                                    Média
-                                </option>
-
-                                <option value="high">
-                                    Alta
-                                </option>
-
-                                <option value="critical">
-                                    Crítica
-                                </option>
-                            </select>
-                        </div>
-
-                    </div>
 
                     <div className="form-actions">
 

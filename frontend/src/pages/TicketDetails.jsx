@@ -20,6 +20,19 @@ function TicketDetails() {
         loadPage();
     }, [id]);
 
+    useEffect(() => {
+        if (!success && !error) {
+            return undefined;
+        }
+
+        const timer = setTimeout(() => {
+            setSuccess("");
+            setError("");
+        }, 3000);
+
+        return () => clearTimeout(timer);
+    }, [success, error]);
+
     // ========================================
     // GARANTIR QUE COMENTÁRIOS SEJAM ARRAY
     // ========================================
@@ -76,7 +89,7 @@ function TicketDetails() {
 
             setError(
                 error.message ||
-                    "Não foi possível carregar o chamado."
+                "Não foi possível carregar o chamado."
             );
         } finally {
             setLoading(false);
@@ -148,7 +161,7 @@ function TicketDetails() {
 
             setError(
                 error.message ||
-                    "Não foi possível enviar a mensagem."
+                "Não foi possível enviar a mensagem."
             );
         } finally {
             setSending(false);
@@ -190,48 +203,48 @@ function TicketDetails() {
     // ========================================
 
     function parseDatabaseDate(date) {
-    if (!date) {
-        return null;
+        if (!date) {
+            return null;
+        }
+
+        // Datas ISO que já possuem timezone:
+        // 2026-10-07T22:35:21.000Z
+        if (
+            date.includes("T") &&
+            (
+                date.endsWith("Z") ||
+                /[+-]\d{2}:\d{2}$/.test(date)
+            )
+        ) {
+            return new Date(date);
+        }
+
+        // Datas geradas pelo SQLite CURRENT_TIMESTAMP:
+        // 2026-10-07 14:35:21
+        //
+        // CURRENT_TIMESTAMP é UTC.
+        // Adicionamos T e Z para informar isso ao JavaScript.
+        const utcDate = date
+            .replace(" ", "T") + "Z";
+
+        return new Date(utcDate);
     }
 
-    // Datas ISO que já possuem timezone:
-    // 2026-10-07T22:35:21.000Z
-    if (
-        date.includes("T") &&
-        (
-            date.endsWith("Z") ||
-            /[+-]\d{2}:\d{2}$/.test(date)
-        )
-    ) {
-        return new Date(date);
+    function formatDate(date) {
+        const parsedDate =
+            parseDatabaseDate(date);
+
+        if (
+            !parsedDate ||
+            Number.isNaN(parsedDate.getTime())
+        ) {
+            return "-";
+        }
+
+        return parsedDate.toLocaleString(
+            "pt-BR"
+        );
     }
-
-    // Datas geradas pelo SQLite CURRENT_TIMESTAMP:
-    // 2026-10-07 14:35:21
-    //
-    // CURRENT_TIMESTAMP é UTC.
-    // Adicionamos T e Z para informar isso ao JavaScript.
-    const utcDate = date
-        .replace(" ", "T") + "Z";
-
-    return new Date(utcDate);
-}
-
-function formatDate(date) {
-    const parsedDate =
-        parseDatabaseDate(date);
-
-    if (
-        !parsedDate ||
-        Number.isNaN(parsedDate.getTime())
-    ) {
-        return "-";
-    }
-
-    return parsedDate.toLocaleString(
-        "pt-BR"
-    );
-}
 
     // ========================================
     // CALCULAR SITUAÇÃO DO SLA
@@ -270,7 +283,7 @@ function formatDate(date) {
          * local do navegador.
          */
 
-       const dueDate =
+        const dueDate =
             parseDatabaseDate(ticket.due_at);
 
         const now =
@@ -310,7 +323,7 @@ function formatDate(date) {
             const expiredHours =
                 Math.ceil(
                     expiredMilliseconds /
-                        (1000 * 60 * 60)
+                    (1000 * 60 * 60)
                 );
 
             return {
@@ -330,7 +343,7 @@ function formatDate(date) {
         const hoursRemaining =
             Math.ceil(
                 difference /
-                    (1000 * 60 * 60)
+                (1000 * 60 * 60)
             );
 
         // ========================================
@@ -473,13 +486,31 @@ function formatDate(date) {
 
                 {error && (
                     <div className="error-message">
-                        {error}
+                        <span className="toast-icon">⚠️</span>
+                        <span>{error}</span>
+                        <button
+                            type="button"
+                            className="toast-close"
+                            aria-label="Fechar mensagem"
+                            onClick={() => setError("")}
+                        >
+                            ×
+                        </button>
                     </div>
                 )}
 
                 {success && (
                     <div className="success-message">
-                        {success}
+                        <span className="toast-icon">✅</span>
+                        <span>{success}</span>
+                        <button
+                            type="button"
+                            className="toast-close"
+                            aria-label="Fechar mensagem"
+                            onClick={() => setSuccess("")}
+                        >
+                            ×
+                        </button>
                     </div>
                 )}
 
@@ -581,14 +612,13 @@ function formatDate(date) {
                                             <div
                                                 key={comment.id}
 
-                                                className={`comment ${
+                                                className={`comment ${comment.user_role ===
+                                                    "technician" ||
                                                     comment.user_role ===
-                                                        "technician" ||
-                                                    comment.user_role ===
-                                                        "admin"
-                                                        ? "comment-technician"
-                                                        : "comment-user"
-                                                }`}
+                                                    "admin"
+                                                    ? "comment-technician"
+                                                    : "comment-user"
+                                                    }`}
                                             >
 
                                                 <div className="comment-header">
@@ -602,12 +632,12 @@ function formatDate(date) {
                                                         <span className="comment-role">
 
                                                             {comment.user_role ===
-                                                            "technician"
+                                                                "technician"
                                                                 ? "Técnico"
                                                                 : comment.user_role ===
-                                                                  "admin"
-                                                                ? "Administrador"
-                                                                : "Solicitante"}
+                                                                    "admin"
+                                                                    ? "Administrador"
+                                                                    : "Solicitante"}
 
                                                         </span>
 
@@ -752,8 +782,8 @@ function formatDate(date) {
                                 <strong>
                                     {ticket.due_at
                                         ? formatDate(
-                                              ticket.due_at
-                                          )
+                                            ticket.due_at
+                                        )
                                         : "Não definido"}
                                 </strong>
 

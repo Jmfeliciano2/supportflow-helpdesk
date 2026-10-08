@@ -28,6 +28,19 @@ function AdminDashboard() {
         loadDashboard();
     }, []);
 
+    useEffect(() => {
+        if (!message && !error) {
+            return undefined;
+        }
+
+        const timer = setTimeout(() => {
+            setMessage("");
+            setError("");
+        }, 3000);
+
+        return () => clearTimeout(timer);
+    }, [message, error]);
+
     async function loadDashboard() {
         try {
             setLoading(true);
@@ -256,7 +269,7 @@ function AdminDashboard() {
     const slaStats =
         stats?.sla || {};
 
-     const priorityStats =
+    const priorityStats =
         stats?.priorities || {};
 
     const categoryStats =
@@ -296,47 +309,47 @@ function AdminDashboard() {
             slaStats.average_resolution_hours
         ) || 0;
 
-        // ========================================
-// PRIORIDADES
-// ========================================
+    // ========================================
+    // PRIORIDADES
+    // ========================================
 
-const lowPriority =
-    priorityStats.low || 0;
+    const lowPriority =
+        priorityStats.low || 0;
 
-const mediumPriority =
-    priorityStats.medium || 0;
+    const mediumPriority =
+        priorityStats.medium || 0;
 
-const highPriority =
-    priorityStats.high || 0;
+    const highPriority =
+        priorityStats.high || 0;
 
-const criticalPriority =
-    priorityStats.critical || 0;
+    const criticalPriority =
+        priorityStats.critical || 0;
 
-const pendingCritical =
-    priorityStats.pending_critical || 0;
+    const pendingCritical =
+        priorityStats.pending_critical || 0;
 
 
-// ========================================
-// CATEGORIAS
-// ========================================
+    // ========================================
+    // CATEGORIAS
+    // ========================================
 
-const hardwareTickets =
-    categoryStats.hardware || 0;
+    const hardwareTickets =
+        categoryStats.hardware || 0;
 
-const softwareTickets =
-    categoryStats.software || 0;
+    const softwareTickets =
+        categoryStats.software || 0;
 
-const networkTickets =
-    categoryStats.network || 0;
+    const networkTickets =
+        categoryStats.network || 0;
 
-const accessTickets =
-    categoryStats.access || 0;
+    const accessTickets =
+        categoryStats.access || 0;
 
-const emailTickets =
-    categoryStats.email || 0;
+    const emailTickets =
+        categoryStats.email || 0;
 
-const otherTickets =
-    categoryStats.others || 0;
+    const otherTickets =
+        categoryStats.others || 0;
 
     return (
         <div className="admin-dashboard">
@@ -392,13 +405,31 @@ const otherTickets =
 
                 {message && (
                     <div className="success-message">
-                        {message}
+                        <span className="toast-icon">✅</span>
+                        <span>{message}</span>
+                        <button
+                            type="button"
+                            className="toast-close"
+                            aria-label="Fechar mensagem"
+                            onClick={() => setMessage("")}
+                        >
+                            ×
+                        </button>
                     </div>
                 )}
 
                 {error && (
                     <div className="error-message">
-                        {error}
+                        <span className="toast-icon">⚠️</span>
+                        <span>{error}</span>
+                        <button
+                            type="button"
+                            className="toast-close"
+                            aria-label="Fechar mensagem"
+                            onClick={() => setError("")}
+                        >
+                            ×
+                        </button>
                     </div>
                 )}
 
@@ -731,182 +762,182 @@ const otherTickets =
 
                 </section>
 
-{/* ========================================
+                {/* ========================================
     RELATÓRIOS
 ======================================== */}
 
-<section className="admin-reports-grid">
+                <section className="admin-reports-grid">
 
-    {/* PRIORIDADES */}
+                    {/* PRIORIDADES */}
 
-    <div className="admin-chart-card">
+                    <div className="admin-chart-card">
 
-        <div className="admin-section-title">
+                        <div className="admin-section-title">
 
-            <h2>
-                Chamados por prioridade
-            </h2>
+                            <h2>
+                                Chamados por prioridade
+                            </h2>
 
-            <p>
-                Distribuição dos chamados
-                conforme o nível de urgência.
-            </p>
+                            <p>
+                                Distribuição dos chamados
+                                conforme o nível de urgência.
+                            </p>
 
-        </div>
+                        </div>
 
-        <div className="status-chart">
+                        <div className="status-chart">
 
-            <StatusBar
-                label="Baixa"
-                value={lowPriority}
-                percentage={
-                    calculatePercentage(
-                        lowPriority
-                    )
-                }
-                type="low"
-            />
+                            <StatusBar
+                                label="Baixa"
+                                value={lowPriority}
+                                percentage={
+                                    calculatePercentage(
+                                        lowPriority
+                                    )
+                                }
+                                type="low"
+                            />
 
-            <StatusBar
-                label="Média"
-                value={mediumPriority}
-                percentage={
-                    calculatePercentage(
-                        mediumPriority
-                    )
-                }
-                type="medium"
-            />
+                            <StatusBar
+                                label="Média"
+                                value={mediumPriority}
+                                percentage={
+                                    calculatePercentage(
+                                        mediumPriority
+                                    )
+                                }
+                                type="medium"
+                            />
 
-            <StatusBar
-                label="Alta"
-                value={highPriority}
-                percentage={
-                    calculatePercentage(
-                        highPriority
-                    )
-                }
-                type="high"
-            />
+                            <StatusBar
+                                label="Alta"
+                                value={highPriority}
+                                percentage={
+                                    calculatePercentage(
+                                        highPriority
+                                    )
+                                }
+                                type="high"
+                            />
 
-            <StatusBar
-                label="Crítica"
-                value={criticalPriority}
-                percentage={
-                    calculatePercentage(
-                        criticalPriority
-                    )
-                }
-                type="critical"
-            />
+                            <StatusBar
+                                label="Crítica"
+                                value={criticalPriority}
+                                percentage={
+                                    calculatePercentage(
+                                        criticalPriority
+                                    )
+                                }
+                                type="critical"
+                            />
 
-        </div>
+                        </div>
 
-        <div className="critical-summary">
+                        <div className="critical-summary">
 
-            <span>
-                Chamados críticos pendentes
-            </span>
+                            <span>
+                                Chamados críticos pendentes
+                            </span>
 
-            <strong>
-                {pendingCritical}
-            </strong>
+                            <strong>
+                                {pendingCritical}
+                            </strong>
 
-        </div>
+                        </div>
 
-    </div>
+                    </div>
 
 
-    {/* CATEGORIAS */}
+                    {/* CATEGORIAS */}
 
-    <div className="admin-chart-card">
+                    <div className="admin-chart-card">
 
-        <div className="admin-section-title">
+                        <div className="admin-section-title">
 
-            <h2>
-                Chamados por categoria
-            </h2>
+                            <h2>
+                                Chamados por categoria
+                            </h2>
 
-            <p>
-                Áreas que mais geram
-                solicitações de suporte.
-            </p>
+                            <p>
+                                Áreas que mais geram
+                                solicitações de suporte.
+                            </p>
 
-        </div>
+                        </div>
 
-        <div className="status-chart">
+                        <div className="status-chart">
 
-            <StatusBar
-                label="Hardware"
-                value={hardwareTickets}
-                percentage={
-                    calculatePercentage(
-                        hardwareTickets
-                    )
-                }
-                type="category"
-            />
+                            <StatusBar
+                                label="Hardware"
+                                value={hardwareTickets}
+                                percentage={
+                                    calculatePercentage(
+                                        hardwareTickets
+                                    )
+                                }
+                                type="category"
+                            />
 
-            <StatusBar
-                label="Software"
-                value={softwareTickets}
-                percentage={
-                    calculatePercentage(
-                        softwareTickets
-                    )
-                }
-                type="category"
-            />
+                            <StatusBar
+                                label="Software"
+                                value={softwareTickets}
+                                percentage={
+                                    calculatePercentage(
+                                        softwareTickets
+                                    )
+                                }
+                                type="category"
+                            />
 
-            <StatusBar
-                label="Rede"
-                value={networkTickets}
-                percentage={
-                    calculatePercentage(
-                        networkTickets
-                    )
-                }
-                type="category"
-            />
+                            <StatusBar
+                                label="Rede"
+                                value={networkTickets}
+                                percentage={
+                                    calculatePercentage(
+                                        networkTickets
+                                    )
+                                }
+                                type="category"
+                            />
 
-            <StatusBar
-                label="Acesso"
-                value={accessTickets}
-                percentage={
-                    calculatePercentage(
-                        accessTickets
-                    )
-                }
-                type="category"
-            />
+                            <StatusBar
+                                label="Acesso"
+                                value={accessTickets}
+                                percentage={
+                                    calculatePercentage(
+                                        accessTickets
+                                    )
+                                }
+                                type="category"
+                            />
 
-            <StatusBar
-                label="E-mail"
-                value={emailTickets}
-                percentage={
-                    calculatePercentage(
-                        emailTickets
-                    )
-                }
-                type="category"
-            />
+                            <StatusBar
+                                label="E-mail"
+                                value={emailTickets}
+                                percentage={
+                                    calculatePercentage(
+                                        emailTickets
+                                    )
+                                }
+                                type="category"
+                            />
 
-            <StatusBar
-                label="Outros"
-                value={otherTickets}
-                percentage={
-                    calculatePercentage(
-                        otherTickets
-                    )
-                }
-                type="category"
-            />
+                            <StatusBar
+                                label="Outros"
+                                value={otherTickets}
+                                percentage={
+                                    calculatePercentage(
+                                        otherTickets
+                                    )
+                                }
+                                type="category"
+                            />
 
-        </div>
+                        </div>
 
-    </div>
+                    </div>
 
-</section>
+                </section>
 
 
 
@@ -1112,11 +1143,11 @@ const otherTickets =
                                                 {user.id ===
                                                     currentUser.id && (
 
-                                                    <span className="you-badge">
-                                                        Você
-                                                    </span>
+                                                        <span className="you-badge">
+                                                            Você
+                                                        </span>
 
-                                                )}
+                                                    )}
 
                                             </td>
 
@@ -1147,7 +1178,7 @@ const otherTickets =
                                             <td>
 
                                                 {user.id ===
-                                                currentUser.id ? (
+                                                    currentUser.id ? (
 
                                                     <span className="own-account">
                                                         Sua conta

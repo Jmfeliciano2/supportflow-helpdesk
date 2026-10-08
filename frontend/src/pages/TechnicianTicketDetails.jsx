@@ -34,6 +34,19 @@ function TechnicianTicketDetails() {
         loadTicket();
     }, [id]);
 
+    useEffect(() => {
+        if (!message && !error) {
+            return undefined;
+        }
+
+        const timer = setTimeout(() => {
+            setMessage("");
+            setError("");
+        }, 3000);
+
+        return () => clearTimeout(timer);
+    }, [message, error]);
+
     function normalizeComments(data) {
         if (Array.isArray(data)) {
             return data;
@@ -94,7 +107,7 @@ function TechnicianTicketDetails() {
 
             setError(
                 error.message ||
-                    "Erro ao carregar chamado."
+                "Erro ao carregar chamado."
             );
         } finally {
             setLoading(false);
@@ -128,7 +141,7 @@ function TechnicianTicketDetails() {
 
             setError(
                 error.message ||
-                    "Erro ao assumir chamado."
+                "Erro ao assumir chamado."
             );
         } finally {
             setAssigning(false);
@@ -166,7 +179,7 @@ function TechnicianTicketDetails() {
 
             setError(
                 error.message ||
-                    "Erro ao atualizar status."
+                "Erro ao atualizar status."
             );
         } finally {
             setUpdatingStatus(false);
@@ -226,7 +239,7 @@ function TechnicianTicketDetails() {
 
             setError(
                 error.message ||
-                    "Erro ao enviar mensagem."
+                "Erro ao enviar mensagem."
             );
         } finally {
             setSending(false);
@@ -366,7 +379,7 @@ function TechnicianTicketDetails() {
             const expiredHours =
                 Math.ceil(
                     Math.abs(difference) /
-                        (1000 * 60 * 60)
+                    (1000 * 60 * 60)
                 );
 
             return {
@@ -386,7 +399,7 @@ function TechnicianTicketDetails() {
         const hoursRemaining =
             Math.ceil(
                 difference /
-                    (1000 * 60 * 60)
+                (1000 * 60 * 60)
             );
 
         // Até 4 horas para vencer
@@ -447,18 +460,16 @@ function TechnicianTicketDetails() {
             item.action ===
             "ticket_created"
         ) {
-            return `${
-                item.user_name || "Usuário"
-            } criou o chamado.`;
+            return `${item.user_name || "Usuário"
+                } criou o chamado.`;
         }
 
         if (
             item.action ===
             "ticket_assigned"
         ) {
-            return `${
-                item.user_name || "Técnico"
-            } assumiu o chamado.`;
+            return `${item.user_name || "Técnico"
+                } assumiu o chamado.`;
         }
 
         if (
@@ -561,7 +572,16 @@ function TechnicianTicketDetails() {
 
             {message && (
                 <div className="success-message">
-                    {message}
+                    <span className="toast-icon">✅</span>
+                    <span>{message}</span>
+                    <button
+                        type="button"
+                        className="toast-close"
+                        aria-label="Fechar mensagem"
+                        onClick={() => setMessage("")}
+                    >
+                        ×
+                    </button>
                 </div>
             )}
 
@@ -571,7 +591,16 @@ function TechnicianTicketDetails() {
 
             {error && (
                 <div className="error-message">
-                    {error}
+                    <span className="toast-icon">⚠️</span>
+                    <span>{error}</span>
+                    <button
+                        type="button"
+                        className="toast-close"
+                        aria-label="Fechar mensagem"
+                        onClick={() => setError("")}
+                    >
+                        ×
+                    </button>
                 </div>
             )}
 
@@ -680,19 +709,18 @@ function TechnicianTicketDetails() {
 
                                         const isStaff =
                                             comment.user_role ===
-                                                "technician" ||
+                                            "technician" ||
                                             comment.user_role ===
-                                                "admin";
+                                            "admin";
 
                                         return (
                                             <div
                                                 key={comment.id}
 
-                                                className={`comment ${
-                                                    isStaff
-                                                        ? "comment-technician"
-                                                        : "comment-user"
-                                                }`}
+                                                className={`comment ${isStaff
+                                                    ? "comment-technician"
+                                                    : "comment-user"
+                                                    }`}
                                             >
 
                                                 <div className="comment-header">
@@ -706,12 +734,12 @@ function TechnicianTicketDetails() {
                                                         <span className="comment-role">
 
                                                             {comment.user_role ===
-                                                            "technician"
+                                                                "technician"
                                                                 ? "Técnico"
                                                                 : comment.user_role ===
-                                                                  "admin"
-                                                                ? "Administrador"
-                                                                : "Solicitante"}
+                                                                    "admin"
+                                                                    ? "Administrador"
+                                                                    : "Solicitante"}
 
                                                         </span>
 
@@ -870,12 +898,17 @@ function TechnicianTicketDetails() {
                                                     )}
                                                 </p>
 
-                                                {item.user_name && (
+                                                {(item.user_role === "technician" || item.user_role === "admin" || item.user_role === "user") && (
 
-                                                    <span className="activity-user">
+                                                    <span
+                                                        className={`activity-user ${item.user_role === "technician" || item.user_role === "admin"
+                                                            ? "technician"
+                                                            : "user"}`}
+                                                    >
 
-                                                        Por{" "}
-                                                        {item.user_name}
+                                                        {item.user_role === "technician" || item.user_role === "admin"
+                                                            ? "Suporte Técnico"
+                                                            : "Usuário"}
 
                                                     </span>
 
@@ -951,8 +984,8 @@ function TechnicianTicketDetails() {
                             <span>
                                 {ticket.due_at
                                     ? formatDate(
-                                          ticket.due_at
-                                      )
+                                        ticket.due_at
+                                    )
                                     : "Não definido"}
                             </span>
 
