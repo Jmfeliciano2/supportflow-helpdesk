@@ -611,8 +611,10 @@ cd backend
 Instale as dependências:
 
 ```bash
-npm install
+npm ci --ignore-scripts
 ```
+
+Esse comando usa os binários pré-compilados de `better-sqlite3` e `bcrypt` no Windows e evita uma recompilação pelo `node-gyp` que exige as ferramentas C++ do Visual Studio.
 
 Crie um arquivo:
 
@@ -662,7 +664,7 @@ cd frontend
 Instale as dependências:
 
 ```bash
-npm install
+npm ci
 ```
 
 Execute:
